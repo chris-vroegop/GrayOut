@@ -8,20 +8,45 @@
 
 
 #include <Windows.h>
+#include <shlwapi.h>
 
 #include "MainDialog.h"
 #include "Utils.h"
 #include "ChangeColors.h"
 #include "resource.h"
+#include "RegistryConf.h"
+
 
 
 
 HINSTANCE g_hInstance;
+RegistryConf g_registryConf;
+
+
+static bool ShouldOpenMinimized(LPWSTR lpCmdLine)
+{
+	LPCWSTR space = L" ";
+	StrTrimW(lpCmdLine, space);
+	if (lpCmdLine[0] == '\0')
+	{
+		return false;
+	}
+	else if (wcscmp(lpCmdLine, L"--minimized") == 0)
+	{
+		return true;
+	}
+	else
+	{
+		Utils::LogAndAbort(L"Args parsing");
+	}
+}
 
 
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine,	_In_ int nShowCmd)
 {
 	g_hInstance = hInstance;
+
+	bool openMinimized = ShouldOpenMinimized(lpCmdLine);
 
 	HWND hDlg;
 	MSG msg;
@@ -34,7 +59,10 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
 	MainDialog::EnableNotificationIcon(hDlg);
 	
-	ShowWindow(hDlg, nShowCmd);
+	if (!openMinimized)
+	{
+		ShowWindow(hDlg, nShowCmd);
+	}
 
 	while ((ret = GetMessageW(&msg, 0, 0, 0)) != 0) {
 		if (ret == -1)

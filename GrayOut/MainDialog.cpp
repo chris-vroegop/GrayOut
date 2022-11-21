@@ -10,7 +10,6 @@
 #include "Utils.h"
 #include "ChangeColors.h"
 #include "Main.h"
-#include "Startup.h"
 #include "resource.h"
 
 
@@ -51,37 +50,6 @@ static void ShowContextMenu(HWND hDlg)
 	POINT pos;
 	W32_ABORT_IF_EQ(GetCursorPos(&pos), FALSE);
 	W32_ABORT_IF_EQ(TrackPopupMenu(s_contextMenu, TPM_LEFTALIGN | TPM_BOTTOMALIGN, pos.x, pos.y, 0, hDlg, NULL), FALSE);
-}
-
-
-static void InitDialog(HWND hDlg)
-{
-	// Set Disabled as default radio button
-	SendMessageW(GetDlgItem(hDlg, IDC_STATUS_DISABLED), BM_SETCHECK, BST_CHECKED, 0);
-
-	// Set schedule times to default
-	// TODO: Read from registry
-	SYSTEMTIME pickerTime;
-	pickerTime.wYear = 2000;
-	pickerTime.wMonth = 1;
-	pickerTime.wDayOfWeek = 6;
-	pickerTime.wDay = 1;
-	pickerTime.wHour = 22;
-	pickerTime.wMinute = 0;
-	pickerTime.wSecond = 0;
-	pickerTime.wMilliseconds = 0;
-
-
-	HWND enablePicker, disablePicker;
-	W32_ABORT_IF_EQ(enablePicker = GetDlgItem(hDlg, IDC_ENABLE_AT_PICKER), NULL);
-	W32_ABORT_IF_EQ(disablePicker = GetDlgItem(hDlg, IDC_DISABLE_AT_PICKER), NULL);
-	DateTime_SetSystemtime(enablePicker, GDT_VALID, &pickerTime);
-	pickerTime.wHour = 7;
-	DateTime_SetSystemtime(disablePicker, GDT_VALID, &pickerTime);
-
-	HWND runAtStartupCheckbox;
-	W32_ABORT_IF_EQ(runAtStartupCheckbox = GetDlgItem(hDlg, IDC_RUN_AT_STARTUP), NULL);
-	Button_SetCheck(runAtStartupCheckbox, Startup::IsRunningAtStartupWithCorrectPath() ? BST_CHECKED : BST_UNCHECKED);
 }
 
 
@@ -149,8 +117,72 @@ static void SetupSchedule(HWND hDlg)
 		return;
 	}
 
-	TimerProc(hDlg, NULL, NULL, NULL);
+	g_registryConf.SaveSchedConfig({
+		enablePickerTime.wHour,
+		enablePickerTime.wMinute,
+		enablePickerTime.wSecond,
+		disablePickerTime.wHour,
+		disablePickerTime.wMinute,
+		disablePickerTime.wSecond,
+		});
 
+	TimerProc(hDlg, NULL, NULL, NULL);
+}
+
+
+static void InitDialog(HWND hDlg)
+{
+	GrayOutConfig conf = g_registryConf.RetrieveConfig();
+
+	// Set schedule times
+	HWND enablePicker, disablePicker;
+	SYSTEMTIME pickerTime;
+	pickerTime.wYear = 2000; // Using a random date since only time needed.
+	pickerTime.wMonth = 1;
+	pickerTime.wDayOfWeek = 6;
+	pickerTime.wDay = 1;
+	pickerTime.wHour = conf.schedConf.startHour;
+	pickerTime.wMinute = conf.schedConf.startMin;
+	pickerTime.wSecond = conf.schedConf.startSec;
+	pickerTime.wMilliseconds = 0;
+	W32_ABORT_IF_EQ(enablePicker = GetDlgItem(hDlg, IDC_ENABLE_AT_PICKER), NULL);
+	DateTime_SetSystemtime(enablePicker, GDT_VALID, &pickerTime);
+
+	pickerTime.wHour = conf.schedConf.endHour;
+	pickerTime.wMinute = conf.schedConf.endMin;
+	pickerTime.wSecond = conf.schedConf.endSec;
+	W32_ABORT_IF_EQ(disablePicker = GetDlgItem(hDlg, IDC_DISABLE_AT_PICKER), NULL);
+	DateTime_SetSystemtime(disablePicker, GDT_VALID, &pickerTime);
+
+
+	// Set default radio button
+	int dlgItem = 0;
+	switch (conf.basicConf.mode)
+	{
+	case GrayOutMode::GRAYOUT_DISABLED:
+		dlgItem = IDC_STATUS_DISABLED;
+		ToggleScheduledEnabled(hDlg, FALSE);
+		ChangeColors::DisableGrayscale();
+		break;
+	case GrayOutMode::GRAYOUT_ALWAYS_ON:
+		dlgItem = IDC_STATUS_ALWAYS_ON;
+		ToggleScheduledEnabled(hDlg, FALSE);
+		ChangeColors::EnableGrayscale();
+		break;
+	case GrayOutMode::GRAYOUT_SCHEDULED:
+		dlgItem = IDC_STATUS_SCHEDULE;
+		ToggleScheduledEnabled(hDlg, TRUE);
+		SetupSchedule(hDlg);
+		break;
+	default:
+		Utils::LogAndAbort(L"conf.basicConf.mode");
+	}
+	SendMessageW(GetDlgItem(hDlg, dlgItem), BM_SETCHECK, BST_CHECKED, 0);
+
+
+	HWND runAtStartupCheckbox;
+	W32_ABORT_IF_EQ(runAtStartupCheckbox = GetDlgItem(hDlg, IDC_RUN_AT_STARTUP), NULL);
+	Button_SetCheck(runAtStartupCheckbox, g_registryConf.IsRunningAtStartupWithCorrectPath() ? BST_CHECKED : BST_UNCHECKED);
 }
 
 
@@ -173,21 +205,24 @@ INT_PTR MainDialog::Dlgproc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			case IDC_STATUS_DISABLED:
 				ToggleScheduledEnabled(hDlg, FALSE);
 				ChangeColors::DisableGrayscale();
+				g_registryConf.SaveBasicConfig({ GrayOutMode::GRAYOUT_DISABLED });
 				break;
 			case IDC_STATUS_ALWAYS_ON:
 				ToggleScheduledEnabled(hDlg, FALSE);
 				ChangeColors::EnableGrayscale();
+				g_registryConf.SaveBasicConfig({ GrayOutMode::GRAYOUT_ALWAYS_ON });
 				break;
 			case IDC_STATUS_SCHEDULE:
 				ToggleScheduledEnabled(hDlg, TRUE);
 				SetupSchedule(hDlg);
+				g_registryConf.SaveBasicConfig({ GrayOutMode::GRAYOUT_SCHEDULED });
 				break;
 			
 			// "Run at startup" checkbox
 			case IDC_RUN_AT_STARTUP:
 			{
 				UINT checkboxState = IsDlgButtonChecked(hDlg, IDC_RUN_AT_STARTUP);
-				Startup::ToggleRunAtStartup(checkboxState == BST_CHECKED);
+				g_registryConf.ToggleRunAtStartup(checkboxState == BST_CHECKED);
 				break;
 			}
 
