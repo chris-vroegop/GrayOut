@@ -41,7 +41,7 @@ const std::wstring Utils::GetErrStr(LPCWSTR failedComponent)
 void Utils::LogAndAbort(LPCWSTR failedComponent)
 {
 	const std::wstring errMsg = GetErrStr(failedComponent);
-	MessageBoxW(NULL, errMsg.c_str(), L"Error in EnableGrayscale", MB_OK | MB_ICONERROR);
+	MessageBoxW(NULL, errMsg.c_str(), L"Error in GrayOut", MB_OK | MB_ICONERROR);
 	exit(-1);
 }
 

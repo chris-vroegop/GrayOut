@@ -144,7 +144,6 @@ void RegistryConf::SaveBasicConfig(GrayOutBasicConfig basicConf)
 void RegistryConf::SaveSchedConfig(GrayOutSchedConfig schedConf)
 {
 	QWORD schedule = 0;
-	sizeof(QWORD);
 	schedule = static_cast<QWORD>(static_cast<__int8>(schedConf.endSec)
 		| (static_cast<QWORD>(schedConf.endMin) << 8)
 		| (static_cast<QWORD>(schedConf.endHour) << 16)

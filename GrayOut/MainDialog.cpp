@@ -190,8 +190,13 @@ INT_PTR MainDialog::Dlgproc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
-	case WM_INITDIALOG:
-		InitDialog(hDlg);
+	case WM_NOTIFY: // Common controls
+		switch (((LPNMHDR)lParam)->code)
+		{
+		case DTN_DATETIMECHANGE:
+			SetupSchedule(hDlg);
+			break;
+		}
 		break;
 	case WM_COMMAND:
 		if (HIWORD(wParam) == BN_CLICKED) {
@@ -246,15 +251,23 @@ INT_PTR MainDialog::Dlgproc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_RBUTTONDOWN:
 		case WM_CONTEXTMENU:
 			ShowContextMenu(hDlg);
-		}
-		break;
-	case WM_NOTIFY: // Common controls
-		switch (((LPNMHDR)lParam)->code)
-		{
-		case DTN_DATETIMECHANGE:
-			SetupSchedule(hDlg);
 			break;
 		}
+		break;
+	// If system was in Scheduled mode and wakes from sleep, re-check if grayscale should be enabled/disabled
+	case WM_POWERBROADCAST:
+		switch (wParam)
+		{
+		case PBT_APMRESUMESUSPEND:
+		case PBT_APMRESUMEAUTOMATIC:
+			if (IsDlgButtonChecked(hDlg, IDC_STATUS_SCHEDULE))
+			{
+				SetupSchedule(hDlg);
+			}
+			break;
+		}
+	case WM_INITDIALOG:
+		InitDialog(hDlg);
 		break;
 	case WM_CLOSE:
 		ShowWindow(hDlg, SW_HIDE);

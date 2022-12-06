@@ -18,7 +18,6 @@ void ChangeColors::Init()
 
 void ChangeColors::EnableGrayscale()
 {
-
     MAGCOLOREFFECT grayScale = {
         0.3f,  0.3f,  0.3f,  0.0f,  0.0f,
         0.6f,  0.6f,  0.6f,  0.0f,  0.0f,
