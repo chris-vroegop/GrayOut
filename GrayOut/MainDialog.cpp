@@ -266,6 +266,12 @@ INT_PTR MainDialog::Dlgproc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 			break;
 		}
+	case WM_TIMECHANGE:
+		if (IsDlgButtonChecked(hDlg, IDC_STATUS_SCHEDULE))
+		{
+			SetupSchedule(hDlg);
+		}
+		break;
 	case WM_INITDIALOG:
 		InitDialog(hDlg);
 		break;
