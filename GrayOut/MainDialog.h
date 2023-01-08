@@ -13,7 +13,7 @@
 
 namespace MainDialog
 {
-	INT_PTR Dlgproc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
+	INT_PTR WINAPI Dlgproc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	void EnableNotificationIcon(HWND hwnd);
 	void DisableNotificationIcon(HWND hwnd);
 }

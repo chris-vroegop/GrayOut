@@ -46,8 +46,6 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 {
 	g_hInstance = hInstance;
 
-	bool openMinimized = ShouldOpenMinimized(lpCmdLine);
-
 	HWND hDlg;
 	MSG msg;
 	BOOL ret;
@@ -55,11 +53,12 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 	Utils::InitializeCommonControls();
 	ChangeColors::Init();
 
+
 	W32_ABORT_IF_EQ(hDlg = CreateDialogParamW(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), 0, MainDialog::Dlgproc, 0), NULL);
 
 	MainDialog::EnableNotificationIcon(hDlg);
 	
-	if (!openMinimized)
+	if (!ShouldOpenMinimized(lpCmdLine))
 	{
 		ShowWindow(hDlg, nShowCmd);
 	}

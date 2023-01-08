@@ -59,7 +59,7 @@ static int inline NumSecondsIntoDay(const SYSTEMTIME& sysTime)
 }
 
 
-static void TimerProc(HWND hDlg, UINT, UINT_PTR, DWORD)
+static void WINAPI TimerProc(HWND hDlg, UINT, UINT_PTR, DWORD)
 {
 	SYSTEMTIME systemTime;
 	GetLocalTime(&systemTime);
@@ -186,7 +186,7 @@ static void InitDialog(HWND hDlg)
 }
 
 
-INT_PTR MainDialog::Dlgproc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
+INT_PTR WINAPI MainDialog::Dlgproc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	switch (uMsg)
 	{
